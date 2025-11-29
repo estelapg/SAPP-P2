@@ -6,6 +6,7 @@ import com.tasks.business.entities.Project;
 import com.tasks.business.entities.Task;
 import com.tasks.business.exceptions.DuplicatedResourceException;
 import com.tasks.business.exceptions.InstanceNotFoundException;
+import com.tasks.business.exceptions.PermisssionException;
 import com.tasks.rest.dto.ProjectDto;
 import com.tasks.rest.json.ErrorDetailsResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -68,8 +69,7 @@ public class ProjectController {
     @RequestMapping(value = "/projects", method = RequestMethod.POST)
     public ResponseEntity<?> doCreateProject(Principal principal, @RequestBody ProjectDto project) 
             throws DuplicatedResourceException {
-        Project newProject = projectService.create(project.getName(), project.getDescription(),
-                principal.getName());
+        Project newProject = projectService.create(project.getName(), project.getDescription(),principal.getName());
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}").buildAndExpand(newProject.getProjectId()).toUri();
         return ResponseEntity.created(location).body(newProject);
@@ -82,12 +82,15 @@ public class ProjectController {
                 schema = @Schema(implementation = Project.class))}),
         @ApiResponse(responseCode = "404", description = "The project does not exist or there is one with the same name",
             content = {@Content(mediaType = "application/json",
-                schema = @Schema(implementation = ErrorDetailsResponse.class))})
+                schema = @Schema(implementation = ErrorDetailsResponse.class))}),
+        @ApiResponse(responseCode = "403", description = "The operation is not permitted",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorDetailsResponse.class))})
     })
     @RequestMapping(value = "/projects/{id}", method = RequestMethod.PUT)
-    public ResponseEntity<?> doUpdateProject(@PathVariable("id") Long id, @RequestBody ProjectDto project) 
-        throws InstanceNotFoundException, DuplicatedResourceException {        
-        Project updatedProject = projectService.update(id, project.getName(), project.getDescription());
+    public ResponseEntity<?> doUpdateProject(Principal principal, @PathVariable("id") Long id, @RequestBody ProjectDto project)
+            throws InstanceNotFoundException, DuplicatedResourceException, PermisssionException {
+        Project updatedProject = projectService.update(principal.getName(),id, project.getName(), project.getDescription());
         return ResponseEntity.ok(updatedProject);
     }
 
@@ -96,11 +99,15 @@ public class ProjectController {
         @ApiResponse(responseCode = "204", description = "Successfully removed the project"),
         @ApiResponse(responseCode = "404", description = "The project does not exist",
             content = {@Content(mediaType = "application/json",
-                schema = @Schema(implementation = ErrorDetailsResponse.class))})
+                schema = @Schema(implementation = ErrorDetailsResponse.class))}),
+        @ApiResponse(responseCode = "403", description = "The operation is not permitted",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorDetailsResponse.class))})
     })
     @RequestMapping(value = "/projects/{id}", method = RequestMethod.DELETE)
-    public ResponseEntity<?> doRemoveProjectById(@PathVariable("id") Long id) throws InstanceNotFoundException {
-        projectService.removeById(id);
+    public ResponseEntity<?> doRemoveProjectById(Principal principal, @PathVariable("id") Long id)
+            throws InstanceNotFoundException, PermisssionException {
+        projectService.removeById(principal.getName(), id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
     
@@ -109,7 +116,8 @@ public class ProjectController {
         @ApiResponse(responseCode = "200", description = "Successfully retrieved the list of project tasks",
             content = {@Content(mediaType = "application/json", array = @ArraySchema(schema = @Schema(implementation = Task.class)))}),
         @ApiResponse(responseCode = "404", description = "The project does not exist",
-            content = {@Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDetailsResponse.class))})
+            content = {@Content(mediaType = "application/json", schema = @Schema(implementation = ErrorDetailsResponse.class))}),
+
     })    
     @RequestMapping(value = "/projects/{id}/tasks", method = RequestMethod.GET)
     public ResponseEntity<?> doGetProjectTasksById(@PathVariable("id") Long id) throws InstanceNotFoundException {

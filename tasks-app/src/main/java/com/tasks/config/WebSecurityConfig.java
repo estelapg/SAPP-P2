@@ -60,10 +60,62 @@ public class WebSecurityConfig {
             .sessionManagement((sessionManagement) -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .addFilterBefore(new JwtAuthorizationFilter(tokenProvider, authenticationManager(http)), UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests((authorize) -> authorize
-                .requestMatchers(HttpMethod.GET,  "/swagger-ui.html").permitAll()
-                .requestMatchers(HttpMethod.GET,  "/swagger-ui/*").permitAll()
-                .requestMatchers(HttpMethod.GET,  "/v3/api-docs/**").permitAll()
-                .anyRequest().permitAll());
+                    // Swagger
+                    .requestMatchers(HttpMethod.GET,  "/swagger-ui.html").permitAll()
+                    .requestMatchers(HttpMethod.GET,  "/swagger-ui/*").permitAll()
+                    .requestMatchers(HttpMethod.GET,  "/v3/api-docs/**").permitAll()
+
+                    // Frontend
+                    .requestMatchers(HttpMethod.GET,  "/dashboard").permitAll()
+                    .requestMatchers(HttpMethod.GET,  "/dashboard/*").permitAll()
+
+                    // Recursos estáticos
+                    .requestMatchers(HttpMethod.GET,  "/webjars/**").permitAll()
+                    .requestMatchers(HttpMethod.GET,  "/javascript-libs/**").permitAll()
+                    .requestMatchers(HttpMethod.GET,  "/css/*").permitAll()
+                    .requestMatchers(HttpMethod.GET,  "/application/*").permitAll()
+                    .requestMatchers(HttpMethod.GET,  "/application/common/*").permitAll()
+                    .requestMatchers(HttpMethod.GET,  "/application/backend/**").permitAll()
+                    .requestMatchers(HttpMethod.GET,  "/application/frontend/**").permitAll()
+                    .requestMatchers(HttpMethod.GET,  "/react-libs/*").permitAll()
+
+                    // Login
+                    .requestMatchers(HttpMethod.POST,  "/api/login").permitAll()
+
+                    // Operaciones de tareas y proyectos sin roles
+                    // Pueden ver tareas y proyectos
+                    .requestMatchers(HttpMethod.GET,  "/api/tasks").permitAll()
+                    .requestMatchers(HttpMethod.GET,  "/api/tasks/*").permitAll()
+                    .requestMatchers(HttpMethod.GET,  "/api/projects").permitAll()
+                    .requestMatchers(HttpMethod.GET,  "/api/projects/*").permitAll()
+                    .requestMatchers(HttpMethod.GET,  "/api/projects/*/tasks").permitAll()
+
+                    // Añadir, modificar o eliminar proyectos
+                    .requestMatchers(HttpMethod.POST, "/api/projects").hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.PUT,  "/api/projects/*").hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.DELETE,  "/api/projects/*").hasRole("ADMIN")
+
+                    // Añadir, modificar o eliminar tareas
+                    .requestMatchers(HttpMethod.POST,  "/api/tasks").hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.PUT,  "/api/tasks/*").hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.DELETE,  "/api/tasks/*").hasRole("ADMIN")
+
+                    // Estado de tareas OPEN/CLOSED: admin
+                    .requestMatchers(HttpMethod.POST, "/api/tasks/*/changeState").hasRole("ADMIN")
+
+                    // Cambiar progreso y resolución de tarea: users
+                    .requestMatchers(HttpMethod.POST, "/api/tasks/*/changeProgress").hasRole("USER")
+                    .requestMatchers(HttpMethod.POST, "/api/tasks/*/changeResolution").hasRole("USER")
+
+                    // Cualquiera autenticado puede poner comentarios
+                    .requestMatchers(HttpMethod.GET,  "/api/comments/*").authenticated()
+                    .requestMatchers(HttpMethod.POST, "/api/comments").authenticated()
+
+                    // Ver listado de usuarios: admin
+                    .requestMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN")
+
+                    .anyRequest().denyAll());
+
 
         return http.build();
 

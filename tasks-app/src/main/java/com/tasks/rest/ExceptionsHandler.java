@@ -1,8 +1,9 @@
 package com.tasks.rest;
 
 import com.tasks.business.exceptions.DuplicatedResourceException;
-import com.tasks.business.exceptions.InalidStateException;
+import com.tasks.business.exceptions.InvalidStateException;
 import com.tasks.business.exceptions.InstanceNotFoundException;
+import com.tasks.business.exceptions.PermisssionException;
 import com.tasks.rest.json.ErrorDetailsResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +18,15 @@ public class ExceptionsHandler {
     
     private static final Logger logger = LoggerFactory.getLogger(ExceptionsHandler.class);
 
+    @ExceptionHandler(PermisssionException.class)
+    public final ResponseEntity<ErrorDetailsResponse> handlePermissionException(
+            PermisssionException ex, WebRequest request) {
+        logger.warn(ex.getMessage(), ex);
+        ErrorDetailsResponse errorDetails = new ErrorDetailsResponse(System.currentTimeMillis(), "Operation Not Permitted",
+                ex.getMessage(), null, request.getContextPath(), 403);
+        return new ResponseEntity<>(errorDetails, HttpStatus.FORBIDDEN);
+    }
+
     @ExceptionHandler(InstanceNotFoundException.class)
     public final ResponseEntity<ErrorDetailsResponse> handleInstanceNotFoundException(
         InstanceNotFoundException ex, WebRequest request) {
@@ -26,9 +36,9 @@ public class ExceptionsHandler {
         return new ResponseEntity<>(errorDetails, HttpStatus.NOT_FOUND);
     }
     
-    @ExceptionHandler(InalidStateException.class)
+    @ExceptionHandler(InvalidStateException.class)
     public final ResponseEntity<ErrorDetailsResponse> handleInvalidStateException(
-        InalidStateException ex, WebRequest request) {
+            InvalidStateException ex, WebRequest request) {
         logger.warn(ex.getMessage(), ex);
         ErrorDetailsResponse errorDetails = new ErrorDetailsResponse(System.currentTimeMillis(), "Invalid State", 
         ex.getMessage(), null, request.getContextPath(), 404);

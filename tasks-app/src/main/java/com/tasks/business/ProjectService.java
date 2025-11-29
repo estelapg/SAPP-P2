@@ -4,10 +4,12 @@ import com.tasks.business.entities.Project;
 import com.tasks.business.entities.User;
 import com.tasks.business.exceptions.DuplicatedResourceException;
 import com.tasks.business.exceptions.InstanceNotFoundException;
+import com.tasks.business.exceptions.PermisssionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.tasks.business.repository.ProjectsRepository;
 import com.tasks.business.repository.UsersRepository;
+
 import java.text.MessageFormat;
 import java.util.Objects;
 import java.util.Optional;
@@ -44,13 +46,20 @@ public class ProjectService {
     }
 
     @Transactional
-    public Project update(Long projectId, String name, String description) 
-            throws DuplicatedResourceException, InstanceNotFoundException {
+    public Project update(String callerName, Long projectId, String name, String description)
+            throws DuplicatedResourceException, InstanceNotFoundException, PermisssionException {
+
         Optional<Project> project = projectsRepository.findById(projectId);
+
         if(!project.isPresent()) {
             throw new InstanceNotFoundException(projectId, "Project", 
                     MessageFormat.format("Project {0} does not exist", projectId));
         }
+
+        if (!project.get().getAdmin().getUsername().equals(callerName)) {
+            throw new PermisssionException();
+        }
+
         Project anotherProject = projectsRepository.findByName(name);
         if(anotherProject != null && !Objects.equals(anotherProject.getProjectId(), projectId)) {
             throw new DuplicatedResourceException("Project", name, 
@@ -63,10 +72,14 @@ public class ProjectService {
     }
     
     @Transactional()
-    public void removeById(Long id) throws InstanceNotFoundException {
+    public void removeById(String userName, Long id) throws InstanceNotFoundException, PermisssionException {
         Optional<Project> project = projectsRepository.findById(id);
         if(!project.isPresent()) {
             throw new InstanceNotFoundException(id, "Project" , MessageFormat.format("Project {0} does not exist", id));
+        }
+        if (!project.get().getAdmin().getUsername().equals(userName)) {
+
+            throw new PermisssionException();
         }
         projectsRepository.delete(project.get());
     }
