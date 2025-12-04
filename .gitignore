@@ -1,0 +1,6 @@
+target/
+.idea/
+*.iml
+work
+*.log
+oauth-server.jar
